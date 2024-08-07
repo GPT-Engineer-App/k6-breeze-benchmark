@@ -3,21 +3,31 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Cat, Heart, Info, Paw, Moon, Sun, ChevronDown } from "lucide-react";
+import { Cat, Heart, Info, Paw, Moon, Sun, ChevronDown, Gift, Camera } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const Index = () => {
   const [likeCount, setLikeCount] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currentCatFact, setCurrentCatFact] = useState("");
   const [catImages, setCatImages] = useState([]);
+  const [adoptionProgress, setAdoptionProgress] = useState(0);
+  const [catName, setCatName] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
     fetchCatFact();
     fetchCatImages();
+    const interval = setInterval(() => {
+      setAdoptionProgress(prev => (prev < 100 ? prev + 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchCatFact = async () => {
@@ -43,6 +53,23 @@ const Index = () => {
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
+  };
+
+  const handleAdopt = () => {
+    if (catName.trim() === "") {
+      toast({
+        title: "Name required",
+        description: "Please enter a name for your virtual cat.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Congratulations!",
+        description: `You've virtually adopted ${catName}!`,
+        duration: 5000,
+      });
+      setCatName("");
+    }
   };
 
   return (
@@ -82,7 +109,7 @@ const Index = () => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-16">
-        <div className="flex justify-between items-center mb-12">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-12">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentCatFact}
@@ -90,15 +117,36 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5 }}
-              className="text-xl italic text-gray-600 dark:text-gray-300 max-w-3xl"
+              className="text-xl italic text-gray-600 dark:text-gray-300 max-w-3xl mb-4 md:mb-0"
             >
               "{currentCatFact}"
             </motion.div>
           </AnimatePresence>
-          <Button onClick={toggleDarkMode} variant="outline" size="lg" className="rounded-full">
-            {isDarkMode ? <Sun className="h-6 w-6 mr-2" /> : <Moon className="h-6 w-6 mr-2" />}
-            {isDarkMode ? "Light Mode" : "Dark Mode"}
-          </Button>
+          <div className="flex space-x-4">
+            <Button onClick={toggleDarkMode} variant="outline" size="lg" className="rounded-full">
+              {isDarkMode ? <Sun className="h-6 w-6 mr-2" /> : <Moon className="h-6 w-6 mr-2" />}
+              {isDarkMode ? "Light Mode" : "Dark Mode"}
+            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="lg" className="rounded-full">
+                  <Camera className="h-6 w-6 mr-2" />
+                  Cat Cam
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Live Cat Cam</DialogTitle>
+                  <DialogDescription>
+                    Watch adorable cats in real-time!
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">Live stream would go here</p>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <motion.div
@@ -124,6 +172,39 @@ const Index = () => {
             <CarouselNext />
           </Carousel>
         </motion.div>
+
+        <Card className="mb-12">
+          <CardHeader>
+            <CardTitle className="flex items-center text-2xl">
+              <Gift className="mr-2" /> Virtual Cat Adoption
+            </CardTitle>
+            <CardDescription className="text-lg">
+              Adopt a virtual cat and track your progress!
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col space-y-4">
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="catName">Name your virtual cat</Label>
+                <Input
+                  type="text"
+                  id="catName"
+                  placeholder="e.g. Whiskers"
+                  value={catName}
+                  onChange={(e) => setCatName(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleAdopt}>Adopt Now</Button>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm font-medium">
+                  <span>Adoption Progress</span>
+                  <span>{adoptionProgress}%</span>
+                </div>
+                <Progress value={adoptionProgress} className="w-full" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         <Tabs defaultValue="characteristics" className="mb-12">
           <TabsList className="grid w-full grid-cols-2 text-lg">
             <TabsTrigger value="characteristics">Cat Characteristics</TabsTrigger>

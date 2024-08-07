@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Cat, Heart, Info, Paw, Moon, Sun, ChevronDown, Gift, Camera } from "lucide-react";
+import { Cat, Heart, Info, Paw, Moon, Sun, ChevronDown, Gift, Camera, Music, Volume2, VolumeX } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const Index = () => {
   const [likeCount, setLikeCount] = useState(0);
@@ -19,7 +21,13 @@ const Index = () => {
   const [catImages, setCatImages] = useState([]);
   const [adoptionProgress, setAdoptionProgress] = useState(0);
   const [catName, setCatName] = useState("");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.5);
+  const audioRef = useRef(null);
   const { toast } = useToast();
+
+  const { scrollYProgress } = useScroll();
+  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   useEffect(() => {
     fetchCatFact();
@@ -29,6 +37,26 @@ const Index = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
+
+  const togglePlay = () => {
+    if (audioRef.current.paused) {
+      audioRef.current.play();
+      setIsPlaying(true);
+    } else {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const handleVolumeChange = (newValue) => {
+    setVolume(newValue[0]);
+  };
 
   const fetchCatFact = async () => {
     try {
@@ -76,7 +104,10 @@ const Index = () => {
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-gray-900' : 'bg-gradient-to-b from-purple-100 to-pink-100'}`}>
       {/* Hero Section */}
       <div className="relative h-screen bg-cover bg-center" style={{backgroundImage: "url('https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"}}>
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <motion.div 
+          className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+          style={{ opacity }}
+        >
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -84,20 +115,20 @@ const Index = () => {
             className="text-center text-white"
           >
             <motion.h1 
-              className="text-7xl font-bold mb-4"
+              className="text-8xl font-bold mb-4"
               initial={{ scale: 0.5 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 20 }}
             >
               Feline Fascination
             </motion.h1>
-            <p className="text-2xl mb-8">Discover the Wonderful World of Cats</p>
+            <p className="text-3xl mb-8">Discover the Wonderful World of Cats</p>
             <Button onClick={fetchCatFact} className="bg-purple-600 hover:bg-purple-700 text-lg py-6 px-8">
               <Paw className="mr-2 h-5 w-5" />
               Get a Cat Fact
             </Button>
           </motion.div>
-        </div>
+        </motion.div>
         <motion.div 
           className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
           animate={{ y: [0, 10, 0] }}
@@ -105,6 +136,32 @@ const Index = () => {
         >
           <ChevronDown className="text-white h-10 w-10" />
         </motion.div>
+      </div>
+
+      {/* Audio Player */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <Card className="w-64">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Button onClick={togglePlay} variant="outline" size="icon">
+                {isPlaying ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </Button>
+              <span className="text-sm font-medium">Calming Cat Purrs</span>
+              <Music className="h-4 w-4" />
+            </div>
+            <Slider
+              value={[volume]}
+              onValueChange={handleVolumeChange}
+              max={1}
+              step={0.01}
+              className="w-full"
+            />
+          </CardContent>
+        </Card>
+        <audio ref={audioRef} loop>
+          <source src="https://samplelib.com/lib/preview/mp3/sample-3s.mp3" type="audio/mpeg" />
+          Your browser does not support the audio element.
+        </audio>
       </div>
 
       {/* Main Content */}
@@ -203,6 +260,40 @@ const Index = () => {
                 <Progress value={adoptionProgress} className="w-full" />
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Cat Popularity Chart */}
+        <Card className="mb-12">
+          <CardHeader>
+            <CardTitle className="flex items-center text-2xl">
+              <Chart className="mr-2" /> Cat Popularity Over Time
+            </CardTitle>
+            <CardDescription className="text-lg">
+              Tracking the rise of cat popularity in recent years
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={[
+                  { year: 2018, popularity: 65 },
+                  { year: 2019, popularity: 68 },
+                  { year: 2020, popularity: 75 },
+                  { year: 2021, popularity: 82 },
+                  { year: 2022, popularity: 88 },
+                  { year: 2023, popularity: 92 },
+                ]}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="year" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="popularity" stroke="#8884d8" activeDot={{ r: 8 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
         <Tabs defaultValue="characteristics" className="mb-12">
